@@ -1,0 +1,46 @@
+service: fan-fight-api
+frameworkVersion: '2'
+
+custom:
+  dev:
+    # Defining service wide environment variables here
+    env:
+      host: In actual env, another service can be passed in here to load Database Host such as SSM
+      user: In actual env, another service can be passed in here to load Database User such as SSM
+      password: In actual env, another service can be passed in here to load Database Password such as SSM
+      database: Name of Database to connect to
+      port: In actual env, another service can be passed in here to load Database Port such as SSM
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  stackName: fan-fight-api-${self:provider.stage}
+  memorySize: 256
+  environment: ${self:custom.${self:provider.stage}.env}
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - node_modules/aws-sdk/**
+
+functions:
+  enterUserInContest:
+    description: Enters User in a Fan Fight contest
+    handler: contests/contests.enterUserInContest
+    package:
+      include:
+        - contests/**
+    events:
+      - http:
+          path: users/{user_id}/contest/{contest_id}
+          method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                user_id: true
+                contest_id: true
+    environment:
+      some_var: Handler specific environment variables if required
